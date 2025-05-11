@@ -2,6 +2,7 @@ package loaders
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/web3tea/curio-dashboard/graph/model"
 )
@@ -49,7 +50,7 @@ WHERE storage_id = $1`, id); err != nil {
 		return nil, err
 	}
 	if len(m) != 1 {
-		return nil, ErrorNotFound
+		return nil, fmt.Errorf("storage id not found: %s", id)
 	}
 	return m[0], nil
 }
@@ -92,21 +93,21 @@ func (l *StorageLoaderImpl) StorageStats(ctx context.Context) ([]*model.StorageS
 
 	statsMap := make(map[model.StorageType]*model.StorageStats)
 	countFor := func(group *model.StorageStats, path *model.StoragePath) {
-		group.TotalAvailable += path.Available
-		group.TotalCapacity += path.Capacity
-		group.TotalFsAvailable += path.FsAvailable
-		group.TotalUsed += path.Used
-		group.TotalReserved += path.Reserved
+		group.TotalAvailable += path.Available.Int64
+		group.TotalCapacity += path.Capacity.Int64
+		group.TotalFsAvailable += path.FsAvailable.Int64
+		group.TotalUsed += path.Used.Int64
+		group.TotalReserved += path.Reserved.Int64
 	}
 
 	for _, path := range paths {
 		storageType := model.StorageTypeReadonly
 		switch {
-		case path.CanSeal && path.CanStore:
+		case path.CanSeal.Bool && path.CanStore.Bool:
 			storageType = model.StorageTypeHybrid
-		case path.CanStore:
+		case path.CanStore.Bool:
 			storageType = model.StorageTypeStore
-		case path.CanSeal:
+		case path.CanSeal.Bool:
 			storageType = model.StorageTypeSeal
 		}
 
